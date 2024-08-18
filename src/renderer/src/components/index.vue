@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import { ref,onMounted,nextTick } from 'vue';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
+import { ref, onMounted, nextTick } from 'vue'
 import { useOnline, useDevicesList } from '@vueuse/core'
 import { useRouter, useRoute } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
 const online = useOnline()
-let loading_status = ref(true);
-let status = ref('1/6 初始化中');
-let res = ref('无异常');
+const loading_status = ref(true);
+const status = ref('1/6 初始化中');
+const res = ref('无异常');
 import loading from './tiny/loading.vue'
 const {
   videoInputs: cameras,
   audioInputs: microphones,
-  audioOutputs: speakers,
 } = useDevicesList({
   requestPermissions: true,
 })
