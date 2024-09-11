@@ -2,7 +2,15 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 import { ref, onMounted, nextTick } from 'vue'
-import { useOnline, useDevicesList } from '@vueuse/core'
+import { useOnline, useDevicesList,useWakeLock } from '@vueuse/core'
+const {
+  isSupported: isWakeLockSupported,
+  isActive: isWakeLockActive,
+  request: requestWakeLock,
+  release: releaseWakeLock,
+} = useWakeLock()
+import { define_user_runtime_config } from '../doconnect.config.js';
+
 import { useRouter, useRoute } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
@@ -28,18 +36,27 @@ async function check() {
   status.value = '3/8 检查联网状态'
   if(loading_status.value == true && online.value == true){
     await sleep(1000)
+  } else if( define_user_runtime_config.must_online == false ){
+    await sleep(1500)
   } else {
     loading_status.value = false;
-    res.value = '网络异常';
+    res.value = '网络未连接或异常';
+    return
   }
   status.value = '4/8 检查摄像头与麦克风设备'
-  if(loading_status.value == true && cameras.value.length > 0 && microphones.value.length > 0){
+  if (loading_status.value == true && cameras.value.length > 0 && microphones.value.length > 0) {
     await sleep(1000)
-  }else{
+  } else if (define_user_runtime_config.voice_and_video_must_online == false) {
+    await sleep(1500)
+  } else {
     loading_status.value = false;
     res.value = '摄像头或麦克风异常';
+    return
   }
-  status.value = '5/8 检查客户端更新'
+  status.value = '5/8 正在更新系统设置'
+  if (isWakeLockSupported) {
+    await requestWakeLock()
+  }
   await sleep(700)
   if (loading_status.value == true) {
     status.value = '7/8 正在挂载用户业务运行时路由'
@@ -61,7 +78,14 @@ onMounted(() => {
   <br><br>
   <loading v-if="loading_status"/>
   <h3 v-if="loading_status">{{ status }}</h3>
-  <h3 v-if="!loading_status">{{ res }}</h3>
+  <div v-if="!loading_status">
+    <h2>发生错误:</h2>
+    <h3>{{ res }}</h3>
+    <p>
+      有关报错信息,您可参阅DoConnect文档或当前产品的用户手册<br>或携带截图或拍屏到GitHub - DoConnect官方仓库 发起issues.
+    </p>
+    <p>Moedigital OpenSource 2022-{{ new Date().getFullYear() }}</p>
+  </div>
 </template>
 
 <style scoped>
